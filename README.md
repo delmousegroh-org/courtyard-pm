@@ -1,5 +1,11 @@
 # Room Inspections
 
+![Node](https://img.shields.io/badge/node-%3E%3D22.5.0-339933?logo=node.js&logoColor=white)
+![React](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=black)
+![Express](https://img.shields.io/badge/express-4-000000?logo=express&logoColor=white)
+![SQLite](https://img.shields.io/badge/sqlite-node%3Asqlite-003B57?logo=sqlite&logoColor=white)
+![Vite](https://img.shields.io/badge/vite-8-646CFF?logo=vite&logoColor=white)
+
 A mobile-first web app for tracking preventative maintenance (PM) room inspections, replacing a
 paper checklist system. Rooms are inspected once per "trimester" (Jan–Apr, May–Aug, Sep–Dec) using
 a full item-by-item checklist. A dashboard shows every room as a color-coded, icon-coded tile
