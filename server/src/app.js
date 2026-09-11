@@ -1,5 +1,8 @@
 import express from 'express'
 import session from 'express-session'
+import helmet from 'helmet'
+import compression from 'compression'
+import { rateLimit } from 'express-rate-limit'
 import path from 'node:path'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -16,14 +19,29 @@ import { errorHandler } from './middleware/errorHandler.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const isProd = process.env.NODE_ENV === 'production'
 
+if (isProd && !process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET must be set in production')
+}
+
 export const app = express()
 app.set('trust proxy', 1)
+app.use(helmet())
+app.use(compression())
 app.use(express.json())
+
+app.get('/healthz', (req, res) => res.json({ ok: true }))
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+})
 
 app.use(
   session({
     store: new SQLiteSessionStore(),
-    secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
+    secret: process.env.SESSION_SECRET || 'dev-secret-change-me-only-for-local-dev',
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -35,6 +53,7 @@ app.use(
   })
 )
 
+app.use('/api/auth/login', loginLimiter)
 app.use('/api/auth', authRouter)
 app.use('/api/rooms', roomsRouter)
 app.use('/api/checklist-template', checklistRouter)

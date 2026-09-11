@@ -137,6 +137,12 @@ function seedTrimester({ year, trimester, rooms, checklistItems, userIds, dateWi
 }
 
 export function seedDemo() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'seedDemo() wipes all inspection history and resets demo passwords — refusing to run with NODE_ENV=production'
+    )
+  }
+
   seed() // make sure checklist template + room list exist first
 
   const rooms = db.prepare('SELECT id FROM rooms WHERE is_active = 1 ORDER BY id').all()

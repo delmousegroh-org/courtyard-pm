@@ -18,6 +18,10 @@ server/data/*.db-journal
 server/data/*.db-wal
 server/data/*.db-shm
 server/.env
+server/.env.production
+server/backups/
+
+.claude/
 
 # Editor directories and files
 .vscode/*

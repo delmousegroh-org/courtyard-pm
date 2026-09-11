@@ -4,7 +4,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const dbPath = process.env.DB_PATH || './data/app.db'
+const serverRoot = path.join(__dirname, '../..')
+const dbPath = process.env.DB_PATH
+  ? path.resolve(serverRoot, process.env.DB_PATH)
+  : path.join(serverRoot, 'data/app.db')
 
 fs.mkdirSync(path.dirname(dbPath), { recursive: true })
 
