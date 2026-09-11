@@ -1,0 +1,352 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+#root {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+:root {
+  /* Brand accent — a muted slate blue instead of Bootstrap's default blue */
+  --bs-primary: #3c5a72;
+  --bs-primary-rgb: 60, 90, 114;
+  --bs-primary-text-emphasis: #223341;
+  --bs-primary-bg-subtle: #e8eef2;
+  --bs-primary-border-subtle: #b9c8d2;
+  --bs-link-color: #3c5a72;
+  --bs-link-color-rgb: 60, 90, 114;
+  --bs-link-hover-color: #28394a;
+  --bs-link-hover-color-rgb: 40, 57, 74;
+
+  /* Pastel status palette */
+  --status-ok-bg: #eaf7ee;
+  --status-ok-border: #8fcaa1;
+  --status-ok-text: #2f6b46;
+
+  --status-repair-bg: #fdecf0;
+  --status-repair-border: #e79bb0;
+  --status-repair-text: #a1355a;
+
+  --status-pending-bg: #f1f2f4;
+  --status-pending-border: #ccd0d5;
+  --status-pending-text: #656d76;
+}
+
+.btn-primary {
+  --bs-btn-bg: #3c5a72;
+  --bs-btn-border-color: #3c5a72;
+  --bs-btn-hover-bg: #32495d;
+  --bs-btn-hover-border-color: #2c4152;
+  --bs-btn-active-bg: #28394a;
+  --bs-btn-active-border-color: #28394a;
+  --bs-btn-focus-shadow-rgb: 60, 90, 114;
+  --bs-btn-disabled-bg: #3c5a72;
+  --bs-btn-disabled-border-color: #3c5a72;
+}
+
+.card {
+  border-radius: 0.75rem;
+}
+
+.sticky-save-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: var(--bs-body-bg);
+  border-top: 1px solid var(--bs-border-color);
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+}
+
+.floor-heading {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  color: var(--bs-secondary-color);
+}
+
+/* Small pill used for status labels throughout the app */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  line-height: 1.1;
+}
+
+.status-chip-ok {
+  background: var(--status-ok-bg);
+  border-color: var(--status-ok-border);
+  color: var(--status-ok-text);
+}
+
+.status-chip-repair {
+  background: var(--status-repair-bg);
+  border-color: var(--status-repair-border);
+  color: var(--status-repair-text);
+}
+
+.status-chip-pending {
+  background: var(--status-pending-bg);
+  border-color: var(--status-pending-border);
+  color: var(--status-pending-text);
+}
+
+.room-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 0.5rem;
+}
+
+.room-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  height: 3.75rem;
+  padding: 0 0.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  text-decoration: none;
+  font-weight: 600;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.room-tile:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.room-tile-icon {
+  font-size: 1.1rem;
+}
+
+.room-tile-number {
+  font-size: 0.85rem;
+}
+
+.room-tile-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--status-repair-text);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.15rem 0.35rem;
+  border-radius: 999px;
+}
+
+.room-tile-ok {
+  background: var(--status-ok-bg);
+  border-color: var(--status-ok-border);
+  color: var(--status-ok-text);
+}
+
+.room-tile-repair {
+  background: var(--status-repair-bg);
+  border-color: var(--status-repair-border);
+  color: var(--status-repair-text);
+}
+
+.room-tile-pending {
+  background: var(--status-pending-bg);
+  border-color: var(--status-pending-border);
+  color: var(--status-pending-text);
+}
+
+.stat-card {
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid transparent;
+}
+
+.stat-card-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.stat-card-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-card-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  opacity: 0.85;
+}
+
+.stat-card-total {
+  background: var(--bs-primary-bg-subtle);
+  border-color: var(--bs-primary-border-subtle);
+  color: var(--bs-primary-text-emphasis);
+}
+
+.stat-card-ok {
+  background: var(--status-ok-bg);
+  border-color: var(--status-ok-border);
+  color: var(--status-ok-text);
+}
+
+.stat-card-repair {
+  background: var(--status-repair-bg);
+  border-color: var(--status-repair-border);
+  color: var(--status-repair-text);
+}
+
+.stat-card-pending {
+  background: var(--status-pending-bg);
+  border-color: var(--status-pending-border);
+  color: var(--status-pending-text);
+}
+
+.stat-card-clickable {
+  font-family: inherit;
+  cursor: pointer;
+  transition: box-shadow 0.1s ease, transform 0.1s ease;
+}
+
+.stat-card-clickable:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card-clickable:active {
+  transform: scale(0.98);
+}
+
+.stat-card-active {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Reports drill-down: floor rows and category rows act as filter triggers */
+.drilldown-trigger {
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: background-color 0.1s ease;
+}
+
+.drilldown-trigger:hover {
+  background-color: var(--bs-secondary-bg-subtle);
+}
+
+.drilldown-trigger-active {
+  background-color: var(--bs-primary-bg-subtle);
+}
+
+.drilldown-panel {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.65rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  background: var(--bs-body-bg);
+}
+
+.drilldown-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.room-issue-row {
+  display: block;
+}
+
+.room-issue-detail-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.15rem;
+  font-size: 0.83rem;
+  color: var(--bs-body-color);
+}
+
+.room-issue-detail-list li {
+  margin-bottom: 0.2rem;
+}
+
+/* Checklist — flat header + rule sections, replacing the old accordion */
+.checklist-section {
+  margin-bottom: 1.75rem;
+}
+
+.checklist-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.checklist-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--bs-primary-text-emphasis);
+  margin: 0;
+}
+
+.checklist-section-rule {
+  border: none;
+  border-top: 2px solid var(--bs-primary-border-subtle);
+  margin: 0 0 0.35rem 0;
+  opacity: 1;
+}
+
+.checklist-item-row {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0.6rem 0.65rem;
+  border-radius: 0.5rem;
+  border-left: 3px solid transparent;
+}
+
+.checklist-item-row:not(:last-child) {
+  border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+
+.checklist-item-row-repair {
+  background: var(--status-repair-bg);
+  border-left-color: var(--status-repair-border);
+}
+
+.checklist-item-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.checklist-item-select {
+  max-width: 175px;
+  font-weight: 600;
+}
+
+.checklist-item-select-ok {
+  border-color: var(--status-ok-border);
+  color: var(--status-ok-text);
+}
+
+.checklist-item-select-repair {
+  border-color: var(--status-repair-border);
+  color: var(--status-repair-text);
+}
