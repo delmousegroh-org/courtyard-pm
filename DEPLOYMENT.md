@@ -71,3 +71,17 @@ Audit performed 2026-09-11. Status of each item tracked below — update this fi
 - [ ] Automated tests — none currently exist
 - [ ] `server/.env.production.example` documenting the prod-specific env vars (`SESSION_SECRET`,
       `NODE_ENV=production`, `DB_PATH`, `BACKUP_DIR`)
+- [ ] Revisit session/login policy — sessions currently last 30 days (`server/src/app.js`, cookie
+      `maxAge`) with no way to force a re-login. Worth adding a way to force sign-out (shorter
+      expiry, and/or an admin action to invalidate all sessions, e.g. for a lost/stolen phone or an
+      offboarded technician) before this holds anything more sensitive than PM checklists.
+
+## Session log
+
+- **2026-09-11**: Renamed project/repo to `courtyard-pm`, set up git + GitHub (private repo,
+  `delmousegroh-org/courtyard-pm`), ran the deployment-readiness audit and fixed everything
+  platform-agnostic (see "Done" above). Confirmed `server/data/app.db`'s 270 inspections are
+  `seedDemo.js` mock data, not real records — real history lives on paper (photographed sample
+  matches the app's checklist template exactly) and needs manual transcription via Bulk Backdate
+  (clean visits) or the full room checklist (visits with repair items). Not yet done: wiping the
+  demo data / resetting demo passwords, and the actual transcription.
