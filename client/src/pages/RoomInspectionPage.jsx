@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useParams, useSearchParams, Link } from 'react-router-dom'
+import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { Alert, Button, Spinner } from 'react-bootstrap'
 import PeriodSelector from '../components/layout/PeriodSelector.jsx'
 import ChecklistSections from '../components/inspection/ChecklistSections.jsx'
@@ -19,6 +19,7 @@ function todayIso() {
 export default function RoomInspectionPage() {
   const { roomId } = useParams()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [period, setPeriod] = useState(() => {
     const year = Number(searchParams.get('year'))
@@ -97,7 +98,10 @@ export default function RoomInspectionPage() {
     setSaved(false)
   }
 
-  const handleSave = async () => {
+  // `redirectToDashboard` is only passed true from the manual Save button —
+  // autosave (triggered by the debounce effect below) always saves silently
+  // and stays on the page.
+  const handleSave = async ({ redirectToDashboard = false } = {}) => {
     setSaving(true)
     setSaveError(null)
     try {
@@ -117,6 +121,10 @@ export default function RoomInspectionPage() {
         items,
       })
       setSaved(true)
+      if (redirectToDashboard) {
+        navigate('/')
+        return
+      }
       refetch()
     } catch (err) {
       setSaveError(err.message)
@@ -190,7 +198,13 @@ export default function RoomInspectionPage() {
               <p className="text-danger small mb-2">{saveError}</p>
             )}
             <div className="d-flex align-items-center gap-2">
-              <Button variant="success" size="lg" className="flex-grow-1" onClick={handleSave} disabled={saving}>
+              <Button
+                variant="success"
+                size="lg"
+                className="flex-grow-1"
+                onClick={() => handleSave({ redirectToDashboard: true })}
+                disabled={saving}
+              >
                 {saving ? <Spinner animation="border" size="sm" /> : saved ? 'Saved ✓' : 'Save inspection'}
               </Button>
             </div>
