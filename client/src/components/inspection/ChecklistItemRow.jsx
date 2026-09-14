@@ -50,7 +50,7 @@ export default function ChecklistItemRow({ item, value, onChange }) {
 
   return (
     <div className={`checklist-item-row ${rowClass}`}>
-      <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap w-100">
+      <div className="d-flex justify-content-between align-items-center gap-2 flex-nowrap w-100">
         <span className="checklist-item-label">{item.label}</span>
         <Form.Select
           size="sm"

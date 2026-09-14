@@ -22,12 +22,16 @@ export default function RoomIssueList({ rooms, categoryId, emptyMessage = 'No ro
           : room.issues
 
         return (
-          <ListGroup.Item key={room.roomId} className="room-issue-row">
+          <ListGroup.Item
+            key={room.roomId}
+            action
+            as={Link}
+            to={`/rooms/${room.roomId}/history`}
+            className="room-issue-row"
+          >
             <div className="d-flex justify-content-between align-items-start gap-2">
               <div>
-                <Link to={`/rooms/${room.roomId}/history`} className="fw-semibold text-decoration-none">
-                  Room {room.roomNumber}
-                </Link>
+                <span className="fw-semibold">Room {room.roomNumber}</span>
                 <span className="text-body-secondary small ms-2">Floor {room.floor}</span>
                 <div className="small text-body-secondary">
                   {room.dateCompleted ? (

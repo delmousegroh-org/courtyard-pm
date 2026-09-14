@@ -205,11 +205,15 @@ export default function ReportsPage() {
               <h2 className="h6 text-uppercase text-body-secondary mb-3">Recent activity</h2>
               <ListGroup>
                 {summary.recentActivity.map((a) => (
-                  <ListGroup.Item key={a.inspectionId} className="d-flex justify-content-between align-items-start gap-2">
+                  <ListGroup.Item
+                    key={a.inspectionId}
+                    action
+                    as={Link}
+                    to={`/rooms/${a.roomId}/history`}
+                    className="d-flex justify-content-between align-items-start gap-2"
+                  >
                     <div>
-                      <Link to={`/rooms/${a.roomId}/history`} className="fw-semibold text-decoration-none">
-                        Room {a.roomNumber}
-                      </Link>
+                      <span className="fw-semibold">Room {a.roomNumber}</span>
                       <div className="small text-body-secondary">
                         {periodLabel(a.year, a.trimester)} · {a.dateCompleted}
                         {a.isQuickEntry ? ' (quick)' : ''}
