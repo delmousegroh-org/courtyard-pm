@@ -197,6 +197,12 @@ platform-metadata difference (different npm version), so nothing was lost in the
 - [ ] Off-box backups: `npm run backup` writes to local disk — pair it with something that copies
       backups off the server (S3, rsync to another host, etc.) so a disk failure doesn't take out
       both the live db and its backups
+- [ ] **No local ↔ prod database sync exists, by design** — `server/data/*.db` is gitignored so
+      deploys never touch real data. Local dev and production are two independent SQLite files that
+      just drift apart (different seeded users, different history). If debugging against real data
+      locally becomes useful, the easy path is a one-way `scp` of the latest
+      `server/backups/app-*.db` snapshot down to a local DB file — not a live sync. No script for
+      this yet.
 
 ## 🟢 Nice-to-have
 
@@ -245,3 +251,8 @@ platform-metadata difference (different npm version), so nothing was lost in the
   reopens the "reset demo passwords" blocker above; this is a deliberate, informed tradeoff for a
   hobby app, not an oversight. Both the `lbrashears` cleanup and the password hardening are
   follow-ups once the application is resolved.
+- **2026-09-14 (end of session)**: Noted that local dev and production databases are intentionally
+  unsynced (see "Nice-to-have" above) — came up while explaining why `deploy.sh` never touches
+  `server/data/*.db`. Open items heading into next session: reset `del`/`gary`/`lbrashears` to real
+  passwords once the ProSwing application is answered, schedule `npm run backup` on a cron, and the
+  "Where we are / where we can go" roadmap at the top of this file for portfolio positioning.
