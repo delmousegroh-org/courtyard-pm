@@ -13,7 +13,8 @@
     "seed": "npm run seed -w server",
     "seed:demo": "npm run seed:demo -w server",
     "create-user": "npm run create-user -w server",
-    "backup": "npm run backup -w server"
+    "backup": "npm run backup -w server",
+    "deploy": "git push origin main:production && ssh root@159.223.128.239 'bash -l /var/www/courtyard-pm/deploy.sh'"
   },
   "devDependencies": {
     "concurrently": "^9.0.1"

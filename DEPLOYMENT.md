@@ -10,9 +10,70 @@ Audit performed 2026-09-11. Status of each item tracked below — update this fi
   before going live, not migrated to prod. If real inspection history has already been entered
   through the app, then yes — that file is exactly what needs to move to the server. Figure out
   which case you're in before the first deploy.
-- **Where is this actually running?** (plain VM / Docker / a PaaS / undecided). This changes what
-  process-manager config, reverse-proxy config, and deploy scripts to write. Revisit once decided —
-  see "Deployment target" below.
+
+## Production deployment
+
+**Server:** DigitalOcean droplet, `159.223.128.239` (`159.223.128.239.nip.io`), Ubuntu, reachable
+as `root` over SSH (key-based). App lives at `/var/www/courtyard-pm`, a full clone of this repo
+checked out on the **`production`** branch (a separate branch from `main` — deploys are a deliberate
+promotion, not automatic on every push).
+
+- **Process manager:** systemd unit `courtyard-pm.service` (`/etc/systemd/system/courtyard-pm.service`)
+  runs `node src/index.js` from `server/`, `Restart=on-failure`. `systemctl status|restart courtyard-pm`.
+- **Reverse proxy / TLS:** nginx (`/etc/nginx/sites-enabled/courtyard-pm`) proxies `159.223.128.239.nip.io`
+  → `127.0.0.1:3001`, TLS via certbot/Let's Encrypt (auto-renews).
+- **Static assets:** the Node server itself serves the built client (`server/src/app.js` serves
+  `client/dist` when `NODE_ENV=production` and falls back to `index.html` for SPA routing) — nginx
+  only proxies, it doesn't serve files directly. This means `client/dist` **must be rebuilt on the
+  server** after every deploy (the deploy script below does this).
+- **Deploy key:** a dedicated read-only ed25519 deploy key lives at
+  `/root/.ssh/courtyard_pm_deploy_key` on the droplet, registered on the GitHub repo under Settings →
+  Deploy keys (title "courtyard-pm droplet (deploy, read-only)"). `/root/.ssh/config` on the droplet
+  aliases `github-courtyard-pm` → `github.com` using that key, and `origin` on the droplet's clone
+  points at `git@github-courtyard-pm:delmousegroh-org/courtyard-pm.git`. It's read-only, so it can
+  `fetch`/`pull` but can't push — safe to leave on the box.
+- **Deploy script:** `deploy.sh` (repo root, runs ON the server) backs up the db, resets the working
+  tree to `origin/production`, reinstalls deps, rebuilds the client, restarts the service, and checks
+  `/healthz`.
+
+### How to deploy
+
+From your machine, once `main` has what you want live:
+
+```
+npm run deploy
+```
+
+This fast-forwards `production` to `main` and pushes it (`git push origin main:production`), then
+SSHes in and runs `deploy.sh`. Equivalent by hand:
+
+```
+git push origin main:production
+ssh root@159.223.128.239 'bash -l /var/www/courtyard-pm/deploy.sh'
+```
+
+Deploying is always an explicit `main → production` promotion — pushing to `main` alone never
+touches the live server.
+
+### Rollback
+
+```
+ssh root@159.223.128.239
+cd /var/www/courtyard-pm
+git log --oneline -5        # find the commit to go back to
+git reset --hard <sha>
+npm install && npm run build -w client && systemctl restart courtyard-pm
+```
+
+(Or push an older `main` commit to `production` and re-run `npm run deploy` from your machine.)
+
+### Notes from setup (2026-09-14)
+
+The droplet was originally deployed by `scp`-ing individual changed files by hand (no git on the
+box at all). It's now a proper git checkout on `production`. Before switching it over, the existing
+untracked working tree was snapshotted onto a local-only `master` branch on the droplet as a safety
+net — diffed clean against `origin/production` except for a trivial `package-lock.json`
+platform-metadata difference (different npm version), so nothing was lost in the switch.
 
 ## ✅ Done (2026-09-11)
 
@@ -33,19 +94,10 @@ Audit performed 2026-09-11. Status of each item tracked below — update this fi
 
 - [ ] **Generate a real `SESSION_SECRET`** for prod and store it outside git (e.g. `openssl rand
       -hex 32`). Never reuse the value in `.env.example`.
-- [ ] **Pick a deployment target** and set up process management + reverse proxy accordingly:
-  - **Plain Linux VM** — systemd unit (auto-restart on crash/reboot) + nginx reverse proxy
-    (TLS termination, gzip already handled by `compression` but nginx can front it) + `certbot`
-    for HTTPS
-  - **Docker / Docker Compose** — needs a `Dockerfile` + `docker-compose.yml` with a named volume
-    for `server/data/` (the SQLite file must survive container recreation)
-  - **PaaS** (Railway/Render/Fly.io) — check whether the platform gives you a **persistent volume**;
-    most default ephemeral filesystems will silently delete the SQLite db on every redeploy. This
-    is the single biggest risk if you go this route.
-  - Whichever you pick, wire `npm run backup` into a daily cron/scheduled job and confirm backups
-    land somewhere that survives the server dying (not just the same disk).
-- [ ] **Schedule `npm run backup`** on a cron (or platform equivalent) once the target is chosen —
-      the script exists but nothing calls it automatically yet.
+- [x] **Pick a deployment target** — plain Linux VM (DigitalOcean droplet), systemd + nginx +
+      certbot. See "Production deployment" above.
+- [ ] **Schedule `npm run backup`** on a cron on the droplet — `deploy.sh` backs up before each
+      deploy, but nothing runs it on a regular schedule yet (e.g. daily via crontab).
 - [ ] **Never run `npm run seed:demo` against the production environment/database.** It's now
       blocked by the `NODE_ENV` guard, but treat it as a loaded gun — don't run it manually against
       the prod `DB_PATH` either.
@@ -85,3 +137,8 @@ Audit performed 2026-09-11. Status of each item tracked below — update this fi
   matches the app's checklist template exactly) and needs manual transcription via Bulk Backdate
   (clean visits) or the full room checklist (visits with repair items). Not yet done: wiping the
   demo data / resetting demo passwords, and the actual transcription.
+- **2026-09-14**: First production deploy went out (list-view navigation + checklist mobile/divider
+  fixes), done by hand via `scp` + manual remote build. Converted the droplet from ad-hoc file
+  copies to a proper git-based deploy: added a read-only deploy key, created the `production`
+  branch, checked out the droplet's `/var/www/courtyard-pm` onto it, and wrote `deploy.sh` +
+  `npm run deploy`. See "Production deployment" above for the full setup.
