@@ -168,7 +168,15 @@ platform-metadata difference (different npm version), so nothing was lost in the
       64-hex-char value, not the `.env.example` placeholder.
 - [x] **Pick a deployment target** — plain Linux VM (DigitalOcean droplet), systemd + nginx +
       certbot. See "Production deployment" above.
-- [x] **Reset the demo passwords** — done 2026-09-14, see "Login/auth audit" above.
+- [ ] **Reset the demo passwords** — fixed 2026-09-14, then deliberately reverted same day: `del`
+      and `gary` are back to a shared, guessable password (not recorded here — see local memory) at the user's explicit
+      request. Reopening this checkbox as a reminder that it's not actually in a hardened state
+      right now, even though it was fixed once already — see "Login/auth audit" and the session log
+      entry below for why.
+- [ ] **Delete or rotate the `lbrashears` demo account** (not recorded here — see local memory)
+      created 2026-09-14 for a specific job application (ProSwing Marketing) — it was meant to be
+      temporary, not a standing demo login. Follow up once that application gets a response either
+      way.
 - [ ] **Schedule `npm run backup`** on a cron on the droplet — `deploy.sh` backs up before each
       deploy, but nothing runs it on a regular schedule yet (e.g. daily via crontab).
 - [ ] **Never run `npm run seed:demo` against the production environment/database.** It's now
@@ -230,3 +238,10 @@ platform-metadata difference (different npm version), so nothing was lost in the
   already properly set (stale checkbox, not an actual gap). Talked through project positioning
   given this is a portfolio/side-work piece rather than client work — see "Where we are / where we
   can go" at the top of this file.
+- **2026-09-14**: Used `delgroh.com` as a portfolio link in a real job application (ProSwing
+  Marketing, via email). Created a temporary demo account (`lbrashears`, password not recorded
+  here — see local memory) so the recruiter can log in without the real `del`/`gary` credentials.
+  Also reverted `del` and `gary` back to a shared, memorable password at the user's request —
+  reopens the "reset demo passwords" blocker above; this is a deliberate, informed tradeoff for a
+  hobby app, not an oversight. Both the `lbrashears` cleanup and the password hardening are
+  follow-ups once the application is resolved.
