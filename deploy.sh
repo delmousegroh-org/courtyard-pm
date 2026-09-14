@@ -25,8 +25,17 @@ npm run build -w client
 echo "==> Restarting service"
 systemctl restart "$SERVICE"
 
-sleep 1
 echo "==> Health check"
-curl -sf http://127.0.0.1:3001/healthz && echo || { echo "!! health check failed"; exit 1; }
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  if curl -sf http://127.0.0.1:3001/healthz > /dev/null; then
+    curl -s http://127.0.0.1:3001/healthz && echo
+    break
+  fi
+  if [ "$i" = 10 ]; then
+    echo "!! health check failed after 10s"
+    exit 1
+  fi
+  sleep 1
+done
 
 echo "==> Deployed $(git rev-parse --short HEAD): $(git log -1 --pretty=%s)"
