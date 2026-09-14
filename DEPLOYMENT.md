@@ -18,20 +18,25 @@ Audit performed 2026-09-11. Status of each item tracked below — update this fi
 **`production`** branch (a separate branch from `main` — deploys are a deliberate promotion, not
 automatic on every push).
 
-- **Domain:** `delgroh.com` (Namecheap). DNS: `A` records for `@` and `courtyardpm` both point at
-  `159.223.128.239`; existing `CNAME www → delgroh.com.` makes `www` follow the apex. The app is
-  reachable at `https://delgroh.com`, `https://www.delgroh.com`, and `https://courtyardpm.delgroh.com`
-  — all equivalent, same server/cert. The original `159.223.128.239.nip.io` still works too (kept on
-  the cert as a fallback in case DNS ever breaks) but isn't the one to share/use going forward.
-  Don't touch the domain's existing `TXT` (DKIM) record — it's unrelated, for Namecheap Private Email.
+- **Domain:** `delgroh.com` (Namecheap) is the **canonical link — use this one**. DNS: `A` records
+  for `@` and `courtyardpm` both point at `159.223.128.239`; existing `CNAME www → delgroh.com.`
+  makes `www` follow the apex. `www.delgroh.com`, `courtyardpm.delgroh.com`, and the original
+  `159.223.128.239.nip.io` all still resolve, but nginx 301-redirects every one of them (and plain
+  HTTP on any of them) to `https://delgroh.com` — they're kept only so old links/bookmarks still
+  land somewhere, not for day-to-day use. Don't touch the domain's existing `TXT` (DKIM) record —
+  it's unrelated, for Namecheap Private Email.
 - **Process manager:** systemd unit `courtyard-pm.service` (`/etc/systemd/system/courtyard-pm.service`)
   runs `node src/index.js` from `server/`, `Restart=on-failure`. `systemctl status|restart courtyard-pm`.
-- **Reverse proxy / TLS:** nginx (`/etc/nginx/sites-enabled/courtyard-pm`) proxies `delgroh.com`,
-  `www.delgroh.com`, `courtyardpm.delgroh.com`, and `159.223.128.239.nip.io` → `127.0.0.1:3001`. One
-  certbot/Let's Encrypt cert (lineage name `159.223.128.239.nip.io`, since that's the first `-d` it
-  was originally issued for) covers all four names and auto-renews. To add another hostname later:
-  add it to both `server_name` lines in the nginx config, `nginx -t && systemctl reload nginx`, then
-  `certbot --nginx --cert-name 159.223.128.239.nip.io -d <all names incl. new one> --expand`.
+- **Reverse proxy / TLS:** nginx (`/etc/nginx/sites-enabled/courtyard-pm`) has three server blocks:
+  `delgroh.com` (443) proxies to `127.0.0.1:3001` and is the only one that actually serves the app;
+  a second 443 block matches `www.delgroh.com` / `courtyardpm.delgroh.com` / `159.223.128.239.nip.io`
+  and 301s to `https://delgroh.com$request_uri`; a port-80 block redirects any hostname straight to
+  the same canonical HTTPS URL. One certbot/Let's Encrypt cert (lineage name
+  `159.223.128.239.nip.io`, since that's the first `-d` it was originally issued for) covers all four
+  names and auto-renews. To add another hostname later: add it to the redirect block's `server_name`
+  (or give it its own block if it should serve rather than redirect), `nginx -t && systemctl reload
+  nginx`, then `certbot --nginx --cert-name 159.223.128.239.nip.io -d <all names incl. new one>
+  --expand`.
 - **Static assets:** the Node server itself serves the built client (`server/src/app.js` serves
   `client/dist` when `NODE_ENV=production` and falls back to `index.html` for SPA routing) — nginx
   only proxies, it doesn't serve files directly. This means `client/dist` **must be rebuilt on the
@@ -157,3 +162,7 @@ platform-metadata difference (different npm version), so nothing was lost in the
   cover `delgroh.com` / `www.delgroh.com` / `courtyardpm.delgroh.com` alongside the original
   `159.223.128.239.nip.io`. Left the domain's existing DKIM `TXT` record alone (Namecheap Private
   Email, unrelated).
+- **2026-09-14**: Made `delgroh.com` the canonical link. Restructured nginx into a serving block for
+  `delgroh.com` plus a redirect block sending `www.delgroh.com` / `courtyardpm.delgroh.com` /
+  `159.223.128.239.nip.io` (and any plain-HTTP request) to `https://delgroh.com` with a 301. Verified
+  all four hostnames and both schemes behave correctly.
