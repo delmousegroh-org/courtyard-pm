@@ -13,15 +13,25 @@ Audit performed 2026-09-11. Status of each item tracked below — update this fi
 
 ## Production deployment
 
-**Server:** DigitalOcean droplet, `159.223.128.239` (`159.223.128.239.nip.io`), Ubuntu, reachable
-as `root` over SSH (key-based). App lives at `/var/www/courtyard-pm`, a full clone of this repo
-checked out on the **`production`** branch (a separate branch from `main` — deploys are a deliberate
-promotion, not automatic on every push).
+**Server:** DigitalOcean droplet, `159.223.128.239`, Ubuntu, reachable as `root` over SSH
+(key-based). App lives at `/var/www/courtyard-pm`, a full clone of this repo checked out on the
+**`production`** branch (a separate branch from `main` — deploys are a deliberate promotion, not
+automatic on every push).
 
+- **Domain:** `delgroh.com` (Namecheap). DNS: `A` records for `@` and `courtyardpm` both point at
+  `159.223.128.239`; existing `CNAME www → delgroh.com.` makes `www` follow the apex. The app is
+  reachable at `https://delgroh.com`, `https://www.delgroh.com`, and `https://courtyardpm.delgroh.com`
+  — all equivalent, same server/cert. The original `159.223.128.239.nip.io` still works too (kept on
+  the cert as a fallback in case DNS ever breaks) but isn't the one to share/use going forward.
+  Don't touch the domain's existing `TXT` (DKIM) record — it's unrelated, for Namecheap Private Email.
 - **Process manager:** systemd unit `courtyard-pm.service` (`/etc/systemd/system/courtyard-pm.service`)
   runs `node src/index.js` from `server/`, `Restart=on-failure`. `systemctl status|restart courtyard-pm`.
-- **Reverse proxy / TLS:** nginx (`/etc/nginx/sites-enabled/courtyard-pm`) proxies `159.223.128.239.nip.io`
-  → `127.0.0.1:3001`, TLS via certbot/Let's Encrypt (auto-renews).
+- **Reverse proxy / TLS:** nginx (`/etc/nginx/sites-enabled/courtyard-pm`) proxies `delgroh.com`,
+  `www.delgroh.com`, `courtyardpm.delgroh.com`, and `159.223.128.239.nip.io` → `127.0.0.1:3001`. One
+  certbot/Let's Encrypt cert (lineage name `159.223.128.239.nip.io`, since that's the first `-d` it
+  was originally issued for) covers all four names and auto-renews. To add another hostname later:
+  add it to both `server_name` lines in the nginx config, `nginx -t && systemctl reload nginx`, then
+  `certbot --nginx --cert-name 159.223.128.239.nip.io -d <all names incl. new one> --expand`.
 - **Static assets:** the Node server itself serves the built client (`server/src/app.js` serves
   `client/dist` when `NODE_ENV=production` and falls back to `index.html` for SPA routing) — nginx
   only proxies, it doesn't serve files directly. This means `client/dist` **must be rebuilt on the
@@ -142,3 +152,8 @@ platform-metadata difference (different npm version), so nothing was lost in the
   copies to a proper git-based deploy: added a read-only deploy key, created the `production`
   branch, checked out the droplet's `/var/www/courtyard-pm` onto it, and wrote `deploy.sh` +
   `npm run deploy`. See "Production deployment" above for the full setup.
+- **2026-09-14**: Pointed the existing `delgroh.com` domain (Namecheap) at the droplet — added `A`
+  records for `@` and `courtyardpm`, updated nginx `server_name`, expanded the Let's Encrypt cert to
+  cover `delgroh.com` / `www.delgroh.com` / `courtyardpm.delgroh.com` alongside the original
+  `159.223.128.239.nip.io`. Left the domain's existing DKIM `TXT` record alone (Namecheap Private
+  Email, unrelated).
