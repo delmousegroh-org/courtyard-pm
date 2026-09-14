@@ -1,6 +1,32 @@
 # Deployment readiness
 
-Audit performed 2026-09-11. Status of each item tracked below — update this file as things get done.
+Audit performed 2026-09-11, re-audited 2026-09-14 (login/auth focus). Status of each item tracked
+below — update this file as things get done.
+
+## Where we are / where we can go (2026-09-14)
+
+This is a hobby/portfolio project, not paid client work — worth keeping that framing in mind for
+what's "worth" fixing next. Current state: fully deployed on real infrastructure (droplet + systemd
++ nginx + TLS + a real domain + git-based deploys with rollback), core feature set (checklist
+inspections, dashboard, reports/drill-down, bulk backdate, autosave) is solid and working end to
+end, no automated tests exist yet, auth is bare-bones single-role username/password.
+
+**If the goal is landing side work / using this as a portfolio piece**, the highest-leverage next
+moves aren't more app features — they're the things a prospective client or interviewer would
+actually check:
+- **Automated tests + CI** (GitHub Actions running lint/tests on PRs) — right now there are zero
+  tests; that's the first thing a hiring engineer looks for and the fastest credibility signal to add.
+- **A real README case study**: the problem (paper checklists → this), a couple of screenshots, the
+  architecture in a sentence, and what you'd change with more time. That sells harder than code alone.
+- **Roles (admin vs. field tech)** — right now every login can do everything, including editing the
+  room list. A basic role split is a small change that reads as "thought about real usage."
+- **Configurability** — the checklist template and room list are seeded for one specific building.
+  Making that admin-editable (not just hardcoded/seeded) turns this from "a tool for my building"
+  into "a small reusable PM-inspection product," which is a stronger pitch than a single-tenant app.
+- **A separate demo instance with fake data**, distinct from whatever real deployment ends up holding
+  actual building data — so you can hand someone a link without worrying about what's in it.
+
+None of this is urgent — see the login findings below for what actually is.
 
 ## ⚠️ Needs your input first
 
@@ -9,7 +35,38 @@ Audit performed 2026-09-11. Status of each item tracked below — update this fi
   there right now is just that demo data, it should be **wiped and replaced with real inspections**
   before going live, not migrated to prod. If real inspection history has already been entered
   through the app, then yes — that file is exactly what needs to move to the server. Figure out
-  which case you're in before the first deploy.
+  which case you're in before the first deploy. (Still 270 `seedDemo.js` mock inspections as of
+  2026-09-14 — real history hasn't been transcribed yet.)
+
+## 🔐 Login/auth audit (2026-09-14)
+
+- [x] **~~CRITICAL~~ FIXED same day: production was reachable with the seeded demo credentials**
+      (`del` / `open`, `gary` / `open`) at the real public domain `delgroh.com`. Confirmed live
+      (logged in against prod, then logged back out) before fixing. Rotated both to random 20-char
+      passwords via `create-user.js` on the droplet — **get the new passwords from this
+      conversation and put them in a password manager**, they weren't written anywhere else. This
+      had been flagged as an open item since the 2026-09-11 audit but became actually dangerous
+      once the app moved off an obscure IP-based nip.io address onto a real, memorable domain.
+- [x] `SESSION_SECRET` in prod is in fact a real random 64-hex-char value (`openssl rand -hex 32`
+      shape), not a placeholder — the 2026-09-11 audit listed this as an open blocker but it was
+      already done; just wasn't checked off.
+- [ ] **Login has a username-enumeration timing side-channel**: `auth.routes.js` does
+      `!user || !bcrypt.compareSync(...)` — when `user` is `null` the `bcrypt.compareSync` call is
+      skipped entirely (short-circuit), so a nonexistent username returns noticeably faster than a
+      real username with a wrong password. Fix: always run a compare (against a fixed dummy hash
+      when there's no user) so both paths take the same time.
+- [ ] **Rate limiting is per-IP only, not per-account** (`loginLimiter`, 20 attempts/15 min, shared
+      across every username hitting that limiter from the same IP). A distributed attacker can
+      still brute-force one specific account from many IPs. Low priority for a 2-user app, but
+      worth a per-username counter if this ever holds real tenant data.
+- [ ] **No roles** — every logged-in user has full access, including Settings → Rooms. Fine for two
+      trusted users; revisit if this ever has more than a couple of logins.
+- [ ] **No self-service password reset** — there's no email anywhere in this app (by design, see
+      README), so resets are a manual `create-user.js` run on the server. Acceptable for personal
+      use; would need a real flow (or at least an admin UI) before handing this to someone else.
+- [ ] Sessions still last 30 days with no forced-reauth / revoke-all mechanism (carried over from
+      the 2026-09-11 audit, see "Nice-to-have" below) — a lost/stolen phone stays logged in for up
+      to a month.
 
 ## Production deployment
 
@@ -107,10 +164,11 @@ platform-metadata difference (different npm version), so nothing was lost in the
 
 ## 🔴 Blockers — before first production deploy
 
-- [ ] **Generate a real `SESSION_SECRET`** for prod and store it outside git (e.g. `openssl rand
-      -hex 32`). Never reuse the value in `.env.example`.
+- [x] **Generate a real `SESSION_SECRET`** for prod — verified 2026-09-14, already a proper random
+      64-hex-char value, not the `.env.example` placeholder.
 - [x] **Pick a deployment target** — plain Linux VM (DigitalOcean droplet), systemd + nginx +
       certbot. See "Production deployment" above.
+- [x] **Reset the demo passwords** — done 2026-09-14, see "Login/auth audit" above.
 - [ ] **Schedule `npm run backup`** on a cron on the droplet — `deploy.sh` backs up before each
       deploy, but nothing runs it on a regular schedule yet (e.g. daily via crontab).
 - [ ] **Never run `npm run seed:demo` against the production environment/database.** It's now
@@ -166,3 +224,9 @@ platform-metadata difference (different npm version), so nothing was lost in the
   `delgroh.com` plus a redirect block sending `www.delgroh.com` / `courtyardpm.delgroh.com` /
   `159.223.128.239.nip.io` (and any plain-HTTP request) to `https://delgroh.com` with a 301. Verified
   all four hostnames and both schemes behave correctly.
+- **2026-09-14**: Re-audited with a login/auth focus. Found prod was still reachable with the
+  original seeded demo credentials now that it's on a real domain — confirmed live, then rotated
+  both passwords immediately (see "Login/auth audit" above). Also confirmed `SESSION_SECRET` was
+  already properly set (stale checkbox, not an actual gap). Talked through project positioning
+  given this is a portfolio/side-work piece rather than client work — see "Where we are / where we
+  can go" at the top of this file.
