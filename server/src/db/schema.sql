@@ -56,8 +56,8 @@ CREATE TABLE IF NOT EXISTS inspection_items (
   id INTEGER PRIMARY KEY,
   inspection_id INTEGER NOT NULL REFERENCES inspections(id) ON DELETE CASCADE,
   checklist_item_id INTEGER NOT NULL REFERENCES checklist_items(id),
-  status TEXT NOT NULL CHECK (status IN ('ok','needs_repair')),
-  repair_code TEXT CHECK (repair_code IN ('1','2','3','4')),
+  status TEXT NOT NULL CHECK (status IN ('ok','needs_repair','repair_complete')),
+  repair_code TEXT CHECK (repair_code IN ('caulking','replace','paint')),
   note TEXT,
   UNIQUE (inspection_id, checklist_item_id)
 );

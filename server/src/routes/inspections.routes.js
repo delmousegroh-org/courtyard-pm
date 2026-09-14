@@ -48,7 +48,7 @@ inspectionsRouter.post('/', (req, res, next) => {
       if (!validItemIds.has(item.checklistItemId)) {
         return res.status(400).json({ error: `Unknown checklistItemId ${item.checklistItemId}` })
       }
-      if (!['ok', 'needs_repair'].includes(item.status)) {
+      if (!['ok', 'needs_repair', 'repair_complete'].includes(item.status)) {
         return res.status(400).json({ error: `Invalid status for item ${item.checklistItemId}` })
       }
     }

@@ -38,6 +38,10 @@ body {
   --status-pending-bg: #f1f2f4;
   --status-pending-border: #ccd0d5;
   --status-pending-text: #656d76;
+
+  --status-complete-bg: #eaf2fb;
+  --status-complete-border: #93b9dd;
+  --status-complete-text: #33587f;
 }
 
 .btn-primary {
@@ -331,6 +335,11 @@ body {
   border-left-color: var(--status-repair-border);
 }
 
+.checklist-item-row-complete {
+  background: var(--status-complete-bg);
+  border-left-color: var(--status-complete-border);
+}
+
 .checklist-item-label {
   flex: 1 1 auto;
   min-width: 0;
@@ -349,4 +358,9 @@ body {
 .checklist-item-select-repair {
   border-color: var(--status-repair-border);
   color: var(--status-repair-text);
+}
+
+.checklist-item-select-complete {
+  border-color: var(--status-complete-border);
+  color: var(--status-complete-text);
 }

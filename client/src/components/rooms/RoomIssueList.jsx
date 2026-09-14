@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { ListGroup, Badge } from 'react-bootstrap'
 import { PersonFill, PeopleFill } from 'react-bootstrap-icons'
 import RoomStatusChip from '../common/RoomStatusChip.jsx'
+import { repairTypeLabel } from '../../utils/repairTypes.js'
 
 // Rooms drill-down list: shared by the stat cards, floor bars, and category
 // list on the Reports page, and anywhere else "show me the rooms behind this
@@ -56,7 +57,7 @@ export default function RoomIssueList({ rooms, categoryId, emptyMessage = 'No ro
                     {issue.note ? ` — ${issue.note}` : ''}
                     {issue.repairCode && (
                       <Badge bg="light" text="dark" className="ms-2">
-                        code {issue.repairCode}
+                        {repairTypeLabel(issue.repairCode, 'needs_repair')}
                       </Badge>
                     )}
                   </li>

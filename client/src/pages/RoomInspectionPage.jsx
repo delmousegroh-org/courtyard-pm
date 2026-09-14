@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useSearchParams, Link } from 'react-router-dom'
 import { Alert, Button, Spinner } from 'react-bootstrap'
 import PeriodSelector from '../components/layout/PeriodSelector.jsx'
@@ -38,18 +38,30 @@ export default function RoomInspectionPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [saved, setSaved] = useState(false)
+  // Suppresses the autosave effect for the render right after (re)loading a
+  // period's data, so opening a room or switching periods doesn't itself
+  // trigger a save.
+  const skipNextAutosave = useRef(true)
+  // Tracks which room/period the form was last initialized from, so a
+  // background refetch (triggered by autosave) for the *same* period doesn't
+  // clobber edits the user made while the save was in flight.
+  const loadedKeyRef = useRef(null)
 
   const existingInspection = useMemo(() => {
     if (!history) return null
     return history.inspections.find((i) => i.year === period.year && i.trimester === period.trimester) || null
   }, [history, period])
 
-  // (Re)initialize the form whenever the template loads or the selected
-  // period changes to a different existing (or blank) inspection. Local
-  // editable state initialized from async server data — intentional sync.
+  // (Re)initialize the form when the template/history first load or the
+  // selected period changes to a different one. Local editable state
+  // initialized from async server data — intentional sync.
   /* eslint-disable courtyard-pm-hooks/set-state-in-effect */
   useEffect(() => {
-    if (!template) return
+    if (!template || !history) return
+    const key = `${roomId}-${period.year}-${period.trimester}`
+    if (loadedKeyRef.current === key) return
+    loadedKeyRef.current = key
+
     const initial = {}
     for (const category of template) {
       for (const item of category.items) {
@@ -76,7 +88,8 @@ export default function RoomInspectionPage() {
     }
     setValues(initial)
     setSaved(false)
-  }, [template, existingInspection, user])
+    skipNextAutosave.current = true
+  }, [template, history, period.year, period.trimester, roomId, user])
   /* eslint-enable courtyard-pm-hooks/set-state-in-effect */
 
   const handleItemChange = (itemId, value) => {
@@ -111,6 +124,23 @@ export default function RoomInspectionPage() {
       setSaving(false)
     }
   }
+
+  // Autosave: any edit (checklist item, date, notes, technicians) saves
+  // itself in the background after a short pause, on top of the manual Save
+  // button. Skipped once right after (re)loading a period so just opening a
+  // room doesn't write anything.
+  useEffect(() => {
+    if (skipNextAutosave.current) {
+      skipNextAutosave.current = false
+      return
+    }
+    if (!template) return
+    const timer = setTimeout(() => {
+      handleSave()
+    }, 1000)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line courtyard-pm-hooks/exhaustive-deps
+  }, [values, date, overallNotes, technicianIds])
 
   const loading = templateLoading || historyLoading
 

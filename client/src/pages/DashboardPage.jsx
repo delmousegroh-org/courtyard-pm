@@ -1,15 +1,20 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Badge, Button, Form, Modal, ProgressBar, Row, Col, Spinner } from 'react-bootstrap'
 import { Buildings, CheckCircleFill, Circle, ExclamationTriangleFill } from 'react-bootstrap-icons'
 import PeriodSelector from '../components/layout/PeriodSelector.jsx'
 import StatCard from '../components/dashboard/StatCard.jsx'
 import RoomStatusTile from '../components/rooms/RoomStatusTile.jsx'
+import RoomIssueList from '../components/rooms/RoomIssueList.jsx'
 import TechnicianPicker from '../components/inspection/TechnicianPicker.jsx'
 import { useApi } from '../hooks/useApi.js'
 import { getDashboard } from '../api/dashboard.js'
 import { quickBackdate } from '../api/inspections.js'
 import { listUsers } from '../api/users.js'
 import { getCurrentPeriod, periodLabel } from '../utils/period.js'
+
+function sameFilter(a, b) {
+  return a && b && a.kind === b.kind && a.value === b.value
+}
 
 function QuickMarkModal({ room, year, trimester, users, onClose, onSaved }) {
   const [date, setDate] = useState(room.dateCompleted || new Date().toISOString().slice(0, 10))
@@ -66,12 +71,21 @@ function QuickMarkModal({ room, year, trimester, users, onClose, onSaved }) {
 export default function DashboardPage() {
   const [period, setPeriod] = useState(getCurrentPeriod())
   const [quickMarkRoom, setQuickMarkRoom] = useState(null)
+  const [filter, setFilter] = useState(null)
 
   const { data, loading, error, refetch } = useApi(
     () => getDashboard(period.year, period.trimester),
     [period.year, period.trimester]
   )
   const { data: users } = useApi(() => listUsers(), [])
+
+  // Selecting a new period invalidates whatever was being drilled into.
+  // eslint-disable-next-line courtyard-pm-hooks/set-state-in-effect
+  useEffect(() => setFilter(null), [period.year, period.trimester])
+
+  const toggleFilter = (next) => {
+    setFilter((prev) => (sameFilter(prev, next) ? null : next))
+  }
 
   const roomsByFloor = useMemo(() => {
     if (!data) return []
@@ -82,6 +96,12 @@ export default function DashboardPage() {
     }
     return [...groups.entries()].sort((a, b) => a[0] - b[0])
   }, [data])
+
+  const filteredRooms = useMemo(() => {
+    if (!data || !filter) return null
+    if (filter.kind === 'all') return data.rooms
+    return data.rooms.filter((r) => r.status === filter.value)
+  }, [data, filter])
 
   const percentComplete = data && data.totalRooms > 0 ? Math.round((data.completedRooms / data.totalRooms) * 100) : 0
 
@@ -101,12 +121,26 @@ export default function DashboardPage() {
 
       {data && (
         <>
-          <Row className="g-2 mb-3">
+          <Row className="g-2 mb-2">
             <Col xs={6} md={3}>
-              <StatCard icon={Buildings} value={data.totalRooms} label="Total rooms" tone="total" />
+              <StatCard
+                icon={Buildings}
+                value={data.totalRooms}
+                label="Total rooms"
+                tone="total"
+                onClick={() => toggleFilter({ kind: 'all', value: null, label: 'All rooms' })}
+                active={filter?.kind === 'all'}
+              />
             </Col>
             <Col xs={6} md={3}>
-              <StatCard icon={CheckCircleFill} value={data.okRooms} label="All good" tone="ok" />
+              <StatCard
+                icon={CheckCircleFill}
+                value={data.okRooms}
+                label="All good"
+                tone="ok"
+                onClick={() => toggleFilter({ kind: 'status', value: 'ok', label: 'All good' })}
+                active={filter?.kind === 'status' && filter.value === 'ok'}
+              />
             </Col>
             <Col xs={6} md={3}>
               <StatCard
@@ -114,12 +148,38 @@ export default function DashboardPage() {
                 value={data.needsRepairRooms}
                 label="Needs repair"
                 tone="repair"
+                onClick={() => toggleFilter({ kind: 'status', value: 'needs_repair', label: 'Needs repair' })}
+                active={filter?.kind === 'status' && filter.value === 'needs_repair'}
               />
             </Col>
             <Col xs={6} md={3}>
-              <StatCard icon={Circle} value={data.notStartedRooms} label="Not started" tone="pending" />
+              <StatCard
+                icon={Circle}
+                value={data.notStartedRooms}
+                label="Not started"
+                tone="pending"
+                onClick={() => toggleFilter({ kind: 'status', value: 'not_started', label: 'Not started' })}
+                active={filter?.kind === 'status' && filter.value === 'not_started'}
+              />
             </Col>
           </Row>
+
+          {filter && (
+            <div className="drilldown-panel mb-3">
+              <div className="drilldown-panel-header">
+                <span>
+                  {filter.label} <span className="text-body-secondary">({filteredRooms?.length ?? 0})</span>
+                </span>
+                <button type="button" className="btn btn-sm btn-link p-0" onClick={() => setFilter(null)}>
+                  Clear
+                </button>
+              </div>
+              <RoomIssueList
+                rooms={filteredRooms}
+                emptyMessage="No rooms match this filter for the selected period."
+              />
+            </div>
+          )}
 
           <div className="d-flex align-items-center gap-2 mb-4">
             <ProgressBar

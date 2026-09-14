@@ -1,7 +1,12 @@
-// Demo/mock data seeder — NOT run automatically on server boot (see index.js).
-// Populates the two real login users and a full trimester-by-trimester history
-// of inspections from Jan 1 of the current year through today, so the
-// dashboard/reports UI has something realistic to look at while we build it.
+// Legacy-history seeder — NOT run automatically on server boot (see index.js).
+// Populates the two real login users, a full year of mock inspection history
+// for LEGACY_YEAR (standing in for the paper records from that year, which
+// aren't worth hand-transcribing item-by-item), and mock history for the
+// current year through today (elapsed trimesters complete, the current one
+// in progress) so the app isn't empty while real entries are still being
+// filled in through it. Re-running replaces this mock data wholesale — any
+// periods you've since edited by hand through the app will be overwritten
+// too, so only run this while you're still OK with everything being mock.
 //
 // Run with: npm run seed:demo
 import bcrypt from 'bcryptjs'
@@ -51,7 +56,10 @@ const OVERALL_NOTES = [
   null,
 ]
 
-const REPAIR_CODES = ['1', '2', '3', '4']
+const REPAIR_CODES = ['caulking', 'replace', 'paint']
+
+// The one year of paper history we're backfilling as mock/legacy data.
+const LEGACY_YEAR = 2025
 
 function randomDateInRange(start, end) {
   const t = start.getTime() + rand() * (end.getTime() - start.getTime())
@@ -127,7 +135,9 @@ function seedTrimester({ year, trimester, rooms, checklistItems, userIds, dateWi
       const flagAsIssue = issuesLeft > 0 && chance(0.08)
       if (flagAsIssue) {
         issuesLeft -= 1
-        insertItem.run(inspectionId, item.id, 'needs_repair', pick(REPAIR_CODES), pick(REPAIR_NOTES))
+        // Older visits are more likely to have since been resolved.
+        const status = chance(0.5) ? 'repair_complete' : 'needs_repair'
+        insertItem.run(inspectionId, item.id, status, pick(REPAIR_CODES), pick(REPAIR_NOTES))
       } else {
         insertItem.run(inspectionId, item.id, 'ok', null, null)
       }
@@ -152,39 +162,45 @@ export function seedDemo() {
     const userIds = ensureUsers()
     clearInspections()
 
-    const today = new Date()
-    const year = today.getFullYear()
-
-    // Trimester 1 (Jan-Apr) and 2 (May-Aug): fully in the past, essentially done.
-    for (const trimester of [1, 2]) {
-      const { start, end } = trimesterRange(year, trimester)
+    // All three trimesters of LEGACY_YEAR are fully in the past, so each one
+    // is seeded as essentially complete.
+    for (const trimester of [1, 2, 3]) {
+      const { start, end } = trimesterRange(LEGACY_YEAR, trimester)
       const count = seedTrimester({
-        year,
+        year: LEGACY_YEAR,
         trimester,
         rooms,
         checklistItems,
         userIds,
-        dateWindow: { start, end: end > today ? today : end },
+        dateWindow: { start, end },
         completionRate: 0.97,
         quickEntryRate: 0.1,
       })
-      console.log(`Trimester ${trimester} ${year}: ${count}/${rooms.length} rooms seeded`)
+      console.log(`Trimester ${trimester} ${LEGACY_YEAR}: ${count}/${rooms.length} rooms seeded`)
     }
 
-    // Trimester 3 (Sep-Dec): in progress — only up through today, partially done.
-    const { start } = trimesterRange(year, 3)
-    if (today >= start) {
+    // Current year, through today: trimesters that have fully elapsed are
+    // seeded essentially complete; the trimester in progress is seeded
+    // partial, dated only up through today.
+    const today = new Date()
+    const currentYear = today.getFullYear()
+    for (const trimester of [1, 2, 3]) {
+      const { start, end } = trimesterRange(currentYear, trimester)
+      if (start > today) break // trimester hasn't started yet
+
+      const inProgress = end > today
       const count = seedTrimester({
-        year,
-        trimester: 3,
+        year: currentYear,
+        trimester,
         rooms,
         checklistItems,
         userIds,
-        dateWindow: { start, end: today },
-        completionRate: 0.22,
-        quickEntryRate: 0.05,
+        dateWindow: { start, end: inProgress ? today : end },
+        completionRate: inProgress ? 0.22 : 0.97,
+        quickEntryRate: inProgress ? 0.05 : 0.1,
       })
-      console.log(`Trimester 3 ${year} (in progress, through ${today.toISOString().slice(0, 10)}): ${count}/${rooms.length} rooms seeded`)
+      const label = inProgress ? `(in progress, through ${today.toISOString().slice(0, 10)})` : ''
+      console.log(`Trimester ${trimester} ${currentYear} ${label}: ${count}/${rooms.length} rooms seeded`)
     }
   })
 
